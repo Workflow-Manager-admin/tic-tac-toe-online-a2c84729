@@ -59,19 +59,28 @@ const colorAccent = '#ffb300'
 
 const mode = ref<'pvp'|'ai'>('pvp')
 
-// Win counters, persistent in-session
+/* Win counters, persistent in-session.
+   Only access sessionStorage on client to prevent SSR errors */
 const winCounts = ref<{x: number, o: number}>({
-  x: Number(sessionStorage.getItem('winX') || 0),
-  o: Number(sessionStorage.getItem('winO') || 0),
+  x: 0,
+  o: 0,
 })
+
+// Populate from sessionStorage on client-only
+if (process.client) {
+  winCounts.value.x = Number(sessionStorage.getItem('winX') || 0)
+  winCounts.value.o = Number(sessionStorage.getItem('winO') || 0)
+}
 
 const { board, currentPlayer, winner, winnerLine, status, makeMove, restart, aiMove } = useTicTacToe(mode)
 
 watch(winner, (w) => {
   if (w === 'X' || w === 'O') {
     winCounts.value[w.toLowerCase() as 'x'|'o']++
-    sessionStorage.setItem('winX', winCounts.value.x.toString())
-    sessionStorage.setItem('winO', winCounts.value.o.toString())
+    if (process.client) {
+      sessionStorage.setItem('winX', winCounts.value.x.toString())
+      sessionStorage.setItem('winO', winCounts.value.o.toString())
+    }
   }
 })
 
